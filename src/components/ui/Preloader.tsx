@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import React, { useEffect, useRef } from "react";
+import gsap from "gsap";
 
 interface PreloaderProps {
   onComplete: () => void;
 }
 
-const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) {
+const Preloader = React.memo(function Preloader({
+  onComplete,
+}: PreloaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const plateRef = useRef<SVGCircleElement>(null);
   const steamRef = useRef<SVGGElement>(null);
@@ -13,11 +15,11 @@ const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) 
 
   useEffect(() => {
     if (!containerRef.current) return;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     const tl = gsap.timeline({
       onComplete: () => {
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
         onComplete();
       },
     });
@@ -27,8 +29,8 @@ const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) 
       scale: 0,
       opacity: 0,
       duration: 0.6,
-      ease: 'back.out(1.7)',
-      transformOrigin: 'center',
+      ease: "back.out(1.7)",
+      transformOrigin: "center",
     })
       .from(
         steamRef.current!.children,
@@ -37,10 +39,10 @@ const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) 
           opacity: 0,
           stagger: 0.15,
           duration: 0.5,
-          ease: 'power2.out',
-          transformOrigin: 'bottom center',
+          ease: "power2.out",
+          transformOrigin: "bottom center",
         },
-        '-=0.2'
+        "-=0.2",
       )
       .from(
         textRef.current!.children,
@@ -49,20 +51,20 @@ const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) 
           y: 15,
           stagger: 0.08,
           duration: 0.4,
-          ease: 'power2.out',
+          ease: "power2.out",
         },
-        '-=0.3'
+        "-=0.3",
       )
       .to({}, { duration: 0.8 }) // pausa de 0.8s
       .to(containerRef.current, {
         opacity: 0,
         duration: 0.5,
-        ease: 'power2.inOut',
+        ease: "power2.inOut",
       });
 
     return () => {
       tl.kill();
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [onComplete]);
 
@@ -131,7 +133,7 @@ const Preloader = React.memo(function Preloader({ onComplete }: PreloaderProps) 
       {/* Texto */}
       <div ref={textRef} className="flex flex-col items-center gap-2">
         <h1 className="font-display text-2xl md:text-3xl text-gold tracking-[0.15em]">
-          SAZÓN & FUEGO
+          TONY'S MAR
         </h1>
         <p className="font-body text-xs text-warmgray tracking-[0.3em] uppercase">
           Alta Cocina Contemporánea
