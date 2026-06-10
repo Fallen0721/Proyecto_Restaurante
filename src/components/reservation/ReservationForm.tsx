@@ -118,8 +118,8 @@ const ReservationForm = React.memo(function ReservationForm({
 
       {/* Nota de política */}
       <p className="font-body text-[11px] text-warmgray/60 leading-relaxed">
-        Al confirmar acepta nuestra política de cancelación. Las reservas deben
-        cancelarse con al menos 24 horas de antelación.
+        Reservas con hasta 5 días de antelación. Cancelación gratuita si se
+        realiza 5 h o más antes; con menos de 5 h se aplica un recargo de L400.
       </p>
 
       {/* Botón de envío */}

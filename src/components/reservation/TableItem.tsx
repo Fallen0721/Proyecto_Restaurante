@@ -1,5 +1,4 @@
-import React, { useRef, useState } from 'react';
-import gsap from 'gsap';
+import React from 'react';
 import type { Table } from '../../types/reservation.types';
 
 interface TableItemProps {
@@ -7,80 +6,130 @@ interface TableItemProps {
   isAvailable: boolean;
   isSelected: boolean;
   onSelect: (tableId: string) => void;
+  onHover: (tableId: string | null) => void;
 }
 
-const capacityIcon = (capacity: 2 | 4 | 6): string => {
-  if (capacity === 2) return '⬡';
-  if (capacity === 4) return '⬢';
-  return '⬣';
-};
+// Diámetro de la mesa y área táctil (caja) según la capacidad.
+const TABLE_DIAMETER: Record<number, number> = { 2: 26, 4: 32, 6: 38 };
+const BOX_SIZE: Record<number, number> = { 2: 48, 4: 56, 6: 64 };
 
 const TableItem = React.memo(function TableItem({
   table,
   isAvailable,
   isSelected,
   onSelect,
+  onHover,
 }: TableItemProps) {
-  const tableRef = useRef<HTMLButtonElement>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const box = BOX_SIZE[table.capacity];
+  const dia = TABLE_DIAMETER[table.capacity];
+  const seatR = dia / 2 + 7;
 
-  const handleClick = () => {
-    if (!isAvailable) return;
-    onSelect(table.id);
-    if (tableRef.current) {
-      gsap.fromTo(
-        tableRef.current,
-        { scale: 0.9 },
-        { scale: 1, duration: 0.3, ease: 'back.out(2)' }
-      );
-    }
-  };
+  // Reparte las sillas alrededor de la mesa empezando por arriba.
+  const seats = Array.from({ length: table.capacity }, (_, i) => {
+    const a = (i / table.capacity) * Math.PI * 2 - Math.PI / 2;
+    return {
+      x: Math.cos(a) * seatR,
+      y: Math.sin(a) * seatR,
+      rot: (a * 180) / Math.PI + 90,
+    };
+  });
 
-  const tableSize = table.capacity === 2 ? 'w-10 h-10' : table.capacity === 4 ? 'w-12 h-12' : 'w-14 h-14';
+  const seatCls = isSelected
+    ? 'bg-gold'
+    : isAvailable
+      ? 'bg-gold/50'
+      : 'bg-warmgray/20';
+
+  const tableCls = isSelected
+    ? 'bg-gold border-gold text-charcoal-deep shadow-[0_0_18px_rgba(212,165,116,0.6)] scale-110'
+    : isAvailable
+      ? 'bg-charcoal border-gold/50 text-gold/90 animate-pulse-gold group-hover:border-gold group-hover:bg-gold/15'
+      : 'bg-charcoal-light/40 border-charcoal text-warmgray/40';
 
   return (
     <div
-      className="absolute"
-      style={{ left: `${table.position.x}%`, top: `${table.position.y}%`, transform: 'translate(-50%, -50%)' }}
+      className="absolute -translate-x-1/2 -translate-y-1/2"
+      style={{ left: `${table.position.x}%`, top: `${table.position.y}%` }}
     >
-      <button
-        ref={tableRef}
-        onClick={handleClick}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onFocus={() => setShowTooltip(true)}
-        onBlur={() => setShowTooltip(false)}
-        disabled={!isAvailable}
-        aria-label={`Mesa ${table.number} - ${table.capacity} personas - ${isAvailable ? 'Disponible' : 'Ocupada'}`}
-        className={[
-          tableSize,
-          'rounded-sm transition-all duration-200 flex flex-col items-center justify-center relative',
-          isSelected
-            ? 'bg-gold/20 border-2 border-gold shadow-[0_0_15px_rgba(212,165,116,0.5)] scale-110'
-            : isAvailable
-            ? 'bg-charcoal border border-gold/40 hover:border-gold hover:bg-gold/10 animate-pulse-gold cursor-pointer'
-            : 'bg-charcoal-light/50 border border-charcoal cursor-not-allowed opacity-50',
-        ].join(' ')}
-      >
-        <span className={['text-xs font-body font-medium', isSelected ? 'text-gold' : isAvailable ? 'text-gold/70' : 'text-warmgray/40'].join(' ')}>
-          {table.number}
-        </span>
-        <span className={['text-[8px]', isSelected ? 'text-gold/60' : 'text-warmgray/40'].join(' ')}>
-          {table.capacity}p
-        </span>
-      </button>
+      {/* .table-anim: objetivo de la animación de entrada (GSAP) en TableMap */}
+      <div className="table-anim">
+        <button
+          type="button"
+          onClick={() => isAvailable && onSelect(table.id)}
+          onMouseEnter={() => onHover(table.id)}
+          onFocus={() => onHover(table.id)}
+          disabled={!isAvailable}
+          aria-pressed={isSelected}
+          aria-label={`Mesa ${table.number}, hasta ${table.capacity} personas, ${
+            isAvailable ? 'disponible' : 'no disponible'
+          }`}
+          className={[
+            'group relative flex items-center justify-center touch-manipulation transition-transform duration-200',
+            isAvailable
+              ? 'cursor-pointer hover:-translate-y-[3px] active:scale-90'
+              : 'cursor-not-allowed',
+            isSelected ? 'z-20' : 'z-[11]',
+          ].join(' ')}
+          style={{ width: box, height: box }}
+        >
+          {/* halo al seleccionar */}
+          {isSelected && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-1 rounded-full bg-gold/20 blur-md animate-pulse"
+            />
+          )}
 
-      {/* Tooltip */}
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-charcoal-light border border-gold/20 px-3 py-1.5 text-xs font-body text-cream whitespace-nowrap z-50 pointer-events-none">
-          Mesa {table.number} · {table.capacity} personas
-          <br />
-          <span className={isAvailable ? 'text-gold' : 'text-terracotta'}>
-            {isAvailable ? 'Disponible' : 'Ocupada'}
+          {/* sillas */}
+          {seats.map((s, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className={['absolute rounded-[2px] transition-colors duration-200', seatCls].join(' ')}
+              style={{
+                width: 8,
+                height: 5,
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) translate(${s.x}px, ${s.y}px) rotate(${s.rot}deg)`,
+              }}
+            />
+          ))}
+
+          {/* mesa */}
+          <span
+            className={[
+              'relative flex items-center justify-center rounded-full border transition-all duration-200',
+              tableCls,
+            ].join(' ')}
+            style={{ width: dia, height: dia }}
+          >
+            <span className="text-[10px] font-body font-semibold leading-none">
+              {table.number}
+            </span>
           </span>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-charcoal-light" />
-        </div>
-      )}
+
+          {/* check de seleccionada */}
+          {isSelected && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-gold text-charcoal-deep flex items-center justify-center text-[9px] font-bold shadow z-30"
+            >
+              ✓
+            </span>
+          )}
+
+          {/* marca de no disponible */}
+          {!isAvailable && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center justify-center text-warmgray/25 text-base"
+            >
+              ✕
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 });

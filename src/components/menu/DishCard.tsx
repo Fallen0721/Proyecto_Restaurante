@@ -88,7 +88,7 @@ const DishCard = React.memo(function DishCard({ dish }: DishCardProps) {
             {dish.name}
           </h3>
           <span className="font-display text-xl text-gold whitespace-nowrap">
-            {dish.price}€
+            L{dish.price}
           </span>
         </div>
 

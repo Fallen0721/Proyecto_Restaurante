@@ -1,9 +1,17 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { generateReservationNumber } from '../../data/reservationsMock';
-import { formatDateDisplay } from '../../utils/dateHelpers';
-import type { ReservationState } from '../../types/reservation.types';
+import { tablesData } from '../../data/tablesData';
+import {
+  formatDateDisplay,
+  getCancellationInfo,
+  LATE_CANCELLATION_FEE,
+} from '../../utils/dateHelpers';
+import type {
+  CancellationInfo,
+  ReservationState,
+} from '../../types/reservation.types';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -24,6 +32,23 @@ const ReservationModal = React.memo(function ReservationModal({
 }: ReservationModalProps) {
   const confettiRef = useRef<HTMLDivElement>(null);
   const reservationNumber = useRef(generateReservationNumber());
+  const [cancelInfo, setCancelInfo] = useState<CancellationInfo | null>(null);
+
+  const selectedTable = useMemo(
+    () => tablesData.find((t) => t.id === reservationData.selectedTable),
+    [reservationData.selectedTable]
+  );
+
+  // Reiniciar la simulación de cancelación al abrir el modal.
+  useEffect(() => {
+    if (isOpen) setCancelInfo(null);
+  }, [isOpen]);
+
+  const handleSimulateCancel = () => {
+    setCancelInfo(
+      getCancellationInfo(reservationData.date, reservationData.time)
+    );
+  };
 
   useEffect(() => {
     if (!isOpen || !confettiRef.current) return;
@@ -114,6 +139,12 @@ const ReservationModal = React.memo(function ReservationModal({
             { label: 'Hora', value: reservationData.time + ' h' },
             { label: 'Comensales', value: reservationData.guests + ' personas' },
             { label: 'Zona', value: zoneLabels[reservationData.zone] },
+            {
+              label: 'Mesa',
+              value: selectedTable
+                ? `Nº ${selectedTable.number} · ${selectedTable.capacity} plazas`
+                : '—',
+            },
             { label: 'Nombre', value: reservationData.name },
             { label: 'Contacto', value: reservationData.email },
           ].map(({ label, value }) => (
@@ -126,9 +157,56 @@ const ReservationModal = React.memo(function ReservationModal({
           ))}
         </div>
 
+        {/* Política de cancelación */}
+        <div className="bg-charcoal/50 border border-gold/10 p-4 mb-6 text-left">
+          <p className="font-body text-[10px] text-gold tracking-widest uppercase mb-2">
+            Política de cancelación
+          </p>
+          <p className="font-body text-xs text-warmgray leading-relaxed">
+            Cancelación gratuita si se realiza 5 h o más antes de la reserva.
+            Con menos de 5 h se aplica un recargo de L{LATE_CANCELLATION_FEE}.
+          </p>
+
+          {/* Demo de cancelación (solo simulación visual) */}
+          <button
+            type="button"
+            onClick={handleSimulateCancel}
+            className="mt-3 min-h-[44px] w-full border border-terracotta/40 text-terracotta font-body text-xs tracking-wide py-2 px-3 rounded-sm transition-colors duration-200 hover:bg-terracotta/10 active:scale-[0.98]"
+          >
+            Simular cancelación
+          </button>
+
+          {cancelInfo && (
+            <div
+              role="status"
+              className={[
+                'mt-3 p-3 rounded-sm border text-xs font-body',
+                cancelInfo.isFree
+                  ? 'border-gold/30 bg-gold/5 text-gold'
+                  : 'border-terracotta/40 bg-terracotta/5 text-terracotta',
+              ].join(' ')}
+            >
+              {cancelInfo.isFree ? (
+                <>
+                  <span className="font-semibold">Cancelación gratuita.</span>{' '}
+                  Faltan {Math.floor(cancelInfo.hoursUntil)} h para tu reserva
+                  (5 h o más de antelación).
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">
+                    Se aplicaría un recargo de L{cancelInfo.fee}.
+                  </span>{' '}
+                  Faltan menos de 5 h para tu reserva.
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <p className="font-body text-xs text-warmgray/60 mb-6">
           Recibirás confirmación en {reservationData.email}.<br />
-          Para modificaciones llama al +34 91 234 56 78.
+          Para modificaciones llama al +504 2440-1234.
         </p>
 
         <Button variant="primary" fullWidth onClick={onClose}>

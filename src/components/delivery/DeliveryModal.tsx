@@ -9,24 +9,41 @@ interface CartItem {
   quantity: number;
 }
 
+type PaymentMethod = 'tarjeta' | 'efectivo';
+
 interface DeliveryModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderNumber: string;
   items: CartItem[];
+  subtotal: number;
+  shipping: number;
   total: number;
   address: string;
   name: string;
+  paymentMethod: PaymentMethod | null;
+  cashGiven?: number;
+  change?: number;
 }
+
+const paymentLabel: Record<PaymentMethod, string> = {
+  tarjeta: '💳 Tarjeta (simulado)',
+  efectivo: '💵 Efectivo al recibir',
+};
 
 const DeliveryModal = React.memo(function DeliveryModal({
   isOpen,
   onClose,
   orderNumber,
   items,
+  subtotal,
+  shipping,
   total,
   address,
   name,
+  paymentMethod,
+  cashGiven,
+  change,
 }: DeliveryModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="w-full max-w-md">
@@ -67,18 +84,28 @@ const DeliveryModal = React.memo(function DeliveryModal({
                     {item.name} × {item.quantity}
                   </span>
                   <span className="font-body text-xs text-gold">
-                    {item.price * item.quantity}€
+                    L{item.price * item.quantity}
                   </span>
                 </div>
               ))}
               <div className="flex justify-between border-t border-charcoal-light mt-2 pt-2">
+                <span className="font-body text-xs text-warmgray">Subtotal</span>
+                <span className="font-body text-xs text-cream">L{subtotal}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-body text-xs text-warmgray">Envío</span>
+                <span className="font-body text-xs text-cream">
+                  {shipping === 0 ? 'Gratis' : `L${shipping}`}
+                </span>
+              </div>
+              <div className="flex justify-between mt-1 pt-1 border-t border-charcoal-light/60">
                 <span className="font-body text-xs text-warmgray">Total</span>
-                <span className="font-body text-xs text-gold font-medium">{total}€</span>
+                <span className="font-body text-xs text-gold font-medium">L{total}</span>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-charcoal/50 p-3">
               <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
                 Nombre
@@ -91,6 +118,22 @@ const DeliveryModal = React.memo(function DeliveryModal({
               </p>
               <p className="font-body text-xs text-cream truncate">{address}</p>
             </div>
+          </div>
+
+          <div className="bg-charcoal/50 p-3">
+            <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
+              Método de pago
+            </p>
+            <p className="font-body text-xs text-cream">
+              {paymentMethod ? paymentLabel[paymentMethod] : '—'}
+            </p>
+            {paymentMethod === 'efectivo' &&
+              cashGiven !== undefined &&
+              change !== undefined && (
+                <p className="font-body text-[11px] text-gold/80 mt-1">
+                  Pagas con L{cashGiven.toFixed(2)} · Cambio: L{change.toFixed(2)}
+                </p>
+              )}
           </div>
         </div>
 

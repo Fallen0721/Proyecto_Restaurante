@@ -6,7 +6,7 @@ const ScrollIndicator = React.memo(function ScrollIndicator() {
 
   return (
     <button
-      onClick={() => scrollTo('#mission-vision')}
+      onClick={() => scrollTo('#nosotros')}
       aria-label="Desplazarse hacia abajo"
       data-cursor="expand"
       className="flex flex-col items-center gap-2 text-cream/60 hover:text-gold transition-colors duration-300 group"

@@ -9,11 +9,10 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { href: "#inicio", label: "Inicio" },
-  { href: "#mission-vision", label: "Nosotros" },
-  { href: "#menu", label: "Carta" },
+  { href: "#nosotros", label: "Nosotros" },
+  { href: "#platillos", label: "Platillos" },
   { href: "#delivery", label: "Delivery" },
-  { href: "#galeria", label: "Galería" },
-  { href: "#reservacion", label: "Contacto" },
+  { href: "#reservaciones", label: "Reservaciones" },
 ];
 
 const Navbar = React.memo(function Navbar() {
@@ -88,24 +87,22 @@ const Navbar = React.memo(function Navbar() {
 
           {/* Links desktop */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) =>
-              link.href === "#reservacion" ? null : (
-                <button
-                  key={link.href}
-                  onClick={() => handleNavClick(link.href)}
-                  data-cursor="expand"
-                  className="nav-link font-body text-sm text-warmgray hover:text-cream transition-colors duration-200 tracking-wide"
-                >
-                  {link.label}
-                </button>
-              ),
-            )}
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                onClick={() => handleNavClick(link.href)}
+                data-cursor="expand"
+                className="nav-link font-body text-sm text-warmgray hover:text-cream transition-colors duration-200 tracking-wide"
+              >
+                {link.label}
+              </button>
+            ))}
           </div>
 
           {/* CTA desktop */}
           <div className="hidden lg:block">
             <button
-              onClick={() => handleNavClick("#reservacion")}
+              onClick={() => handleNavClick("#reservaciones")}
               data-cursor="expand"
               className="font-body text-sm text-charcoal-deep bg-gold hover:bg-gold-dark px-5 py-2.5 tracking-wider transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,165,116,0.3)]"
             >
@@ -117,7 +114,8 @@ const Navbar = React.memo(function Navbar() {
           <button
             onClick={() => setMobileOpen((prev) => !prev)}
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-            className="lg:hidden flex flex-col gap-1.5 w-6 h-5 justify-center"
+            aria-expanded={mobileOpen}
+            className="lg:hidden flex flex-col gap-1.5 w-6 h-5 justify-center p-3 -m-3 box-content"
           >
             <span
               className={[
@@ -153,7 +151,7 @@ const Navbar = React.memo(function Navbar() {
               onClick={() => handleNavClick(link.href)}
               className={[
                 "mobile-link font-display text-3xl transition-colors duration-200",
-                link.href === "#reservacion"
+                link.href === "#reservaciones"
                   ? "text-gold hover:text-gold-light"
                   : "text-cream hover:text-gold",
               ].join(" ")}
@@ -164,7 +162,7 @@ const Navbar = React.memo(function Navbar() {
           <div className="flex items-center gap-4 mt-4">
             <span className="w-8 h-px bg-gold/40" />
             <span className="font-body text-xs text-warmgray/60 tracking-widest uppercase">
-              Madrid, España
+              La Ceiba, Honduras
             </span>
             <span className="w-8 h-px bg-gold/40" />
           </div>

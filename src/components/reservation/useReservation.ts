@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { ReservationState, ReservationZone } from '../../types/reservation.types';
-import { getMinDate, isDateInPast } from '../../utils/dateHelpers';
+import { isDateInPast, isDateBeyondMax } from '../../utils/dateHelpers';
+import { tablesData } from '../../data/tablesData';
 
 const initialState: ReservationState = {
   date: '',
@@ -21,17 +22,26 @@ export function useReservation() {
 
   const updateField = useCallback(
     <K extends keyof ReservationState>(field: K, value: ReservationState[K]) => {
-      setState((prev) => ({
-        ...prev,
-        [field]: value,
-        // Limpiar error del campo al actualizarlo
-        errors: { ...prev.errors, [field]: undefined },
-        // Resetear mesa seleccionada si cambia fecha, hora o zona
-        selectedTable:
-          field === 'date' || field === 'time' || field === 'zone'
-            ? null
-            : prev.selectedTable,
-      }));
+      setState((prev) => {
+        // Si cambia fecha, hora, zona o comensales, la mesa puede dejar de ser válida.
+        const resetsTable =
+          field === 'date' ||
+          field === 'time' ||
+          field === 'zone' ||
+          field === 'guests';
+        return {
+          ...prev,
+          [field]: value,
+          // Limpiar error del campo (y el de la mesa si procede) al actualizar.
+          errors: {
+            ...prev.errors,
+            [field]: undefined,
+            ...(resetsTable ? { selectedTable: undefined } : {}),
+          },
+          // Resetear mesa seleccionada si cambia fecha, hora, zona o comensales.
+          selectedTable: resetsTable ? null : prev.selectedTable,
+        };
+      });
     },
     []
   );
@@ -45,6 +55,8 @@ export function useReservation() {
           if (!value) return 'La fecha es obligatoria';
           if (isDateInPast(value as string))
             return 'La fecha no puede ser en el pasado';
+          if (isDateBeyondMax(value as string))
+            return 'Solo se admiten reservas con hasta 5 días de antelación';
           return undefined;
 
         case 'time':
@@ -102,7 +114,29 @@ export function useReservation() {
   }, [validateField]);
 
   const submitReservation = useCallback(async (): Promise<boolean> => {
-    if (!validateAll()) return false;
+    const fieldsValid = validateAll();
+
+    // Validar que se haya seleccionado una mesa disponible con capacidad suficiente.
+    let tableError: string | undefined;
+    if (!state.selectedTable) {
+      tableError = 'Selecciona una mesa disponible';
+    } else {
+      const table = tablesData.find((t) => t.id === state.selectedTable);
+      if (!table) {
+        tableError = 'Selecciona una mesa disponible';
+      } else if (table.capacity < state.guests) {
+        tableError = `Esta mesa admite ${table.capacity} personas. Elige otra para ${state.guests}.`;
+      }
+    }
+
+    if (tableError) {
+      setState((prev) => ({
+        ...prev,
+        errors: { ...prev.errors, selectedTable: tableError },
+      }));
+    }
+
+    if (!fieldsValid || tableError) return false;
 
     setState((prev) => ({ ...prev, isSubmitting: true }));
 
@@ -116,18 +150,27 @@ export function useReservation() {
     }));
 
     return true;
-  }, [validateAll]);
+  }, [validateAll, state.selectedTable, state.guests]);
 
   const resetForm = useCallback(() => {
     setState(initialState);
   }, []);
 
   const selectTable = useCallback((tableId: string) => {
-    setState((prev) => ({ ...prev, selectedTable: tableId }));
+    setState((prev) => ({
+      ...prev,
+      selectedTable: tableId,
+      errors: { ...prev.errors, selectedTable: undefined },
+    }));
   }, []);
 
   const setZone = useCallback((zone: ReservationZone) => {
-    setState((prev) => ({ ...prev, zone, selectedTable: null }));
+    setState((prev) => ({
+      ...prev,
+      zone,
+      selectedTable: null,
+      errors: { ...prev.errors, selectedTable: undefined },
+    }));
   }, []);
 
   return {

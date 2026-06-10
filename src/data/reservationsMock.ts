@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 
 // Genera disponibilidad pseudo-aleatoria basada en fecha + tableId
 function seededRandom(seed: string): number {

@@ -102,10 +102,10 @@ const Footer = React.memo(function Footer() {
             </div>
             <div className="mt-5 pt-5 border-t border-charcoal-light">
               <p className="font-body text-xs text-warmgray">
-                C/ Gran Vía 42, Madrid
+                Av. San Isidro, La Ceiba
               </p>
               <p className="font-body text-xs text-warmgray mt-1">
-                +34 91 234 56 78
+                +504 2440-1234
               </p>
             </div>
           </div>

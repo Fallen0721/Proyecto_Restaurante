@@ -21,7 +21,7 @@ const ReservationSection = React.memo(function ReservationSection() {
 
   return (
     <section
-      id="reservacion"
+      id="reservaciones"
       className="relative section-padding bg-charcoal overflow-hidden"
     >
       {/* Decoración de fondo */}
@@ -61,9 +61,11 @@ const ReservationSection = React.memo(function ReservationSection() {
               {(['interior', 'terraza', 'barra'] as const).map((zone) => (
                 <button
                   key={zone}
+                  type="button"
                   onClick={() => reservationHook.setZone(zone)}
+                  aria-pressed={state.zone === zone}
                   className={[
-                    'flex-1 py-2 px-2 text-xs font-body tracking-wider transition-all duration-200',
+                    'flex-1 min-h-[44px] py-2 px-2 text-xs sm:text-sm font-body tracking-wider transition-all duration-200',
                     state.zone === zone
                       ? 'bg-gold/20 text-gold border-b border-gold'
                       : 'text-warmgray hover:text-cream',
@@ -78,8 +80,10 @@ const ReservationSection = React.memo(function ReservationSection() {
               date={state.date}
               time={state.time}
               zone={state.zone}
+              guests={state.guests}
               selectedTable={state.selectedTable}
               onTableSelect={selectTable}
+              error={state.errors.selectedTable}
             />
           </div>
         </div>
@@ -87,9 +91,9 @@ const ReservationSection = React.memo(function ReservationSection() {
         {/* Información de contacto */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-charcoal-light pt-8">
           {[
-            { label: 'Teléfono', value: '+34 91 234 56 78', sub: 'Reservas y consultas' },
+            { label: 'Teléfono', value: '+504 2440-1234', sub: 'Reservas y consultas' },
             { label: 'Horario', value: 'Mar–Dom 13:00–23:00', sub: 'Cocina hasta las 22:00' },
-            { label: 'Dirección', value: 'C/ Gran Vía 42, Madrid', sub: 'Metro Gran Vía (L1/L5)' },
+            { label: 'Dirección', value: 'Av. San Isidro, La Ceiba', sub: 'A 2 cuadras del Parque Central' },
           ].map(({ label, value, sub }) => (
             <div key={label} className="text-center">
               <p className="font-body text-xs text-gold tracking-widest uppercase mb-1">

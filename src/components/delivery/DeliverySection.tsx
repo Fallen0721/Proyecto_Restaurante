@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import SectionTitle from '../ui/SectionTitle';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import { menuData } from '../../data/menuData';
+import { menuData, menuCategories } from '../../data/menuData';
 import DeliveryModal from './DeliveryModal';
 
 interface CartItem {
@@ -11,6 +11,8 @@ interface CartItem {
   price: number;
   quantity: number;
 }
+
+type PaymentMethod = 'tarjeta' | 'efectivo';
 
 interface DeliveryForm {
   name: string;
@@ -24,14 +26,27 @@ interface DeliveryForm {
   };
 }
 
-const categoryLabels: Record<string, string> = {
-  all: 'Todo',
-  entrada: 'Entradas',
-  principal: 'Principales',
-  postre: 'Postres',
+interface CardForm {
+  number: string;
+  holder: string;
+  expiry: string;
+  cvv: string;
+}
+
+const MINIMUM_ORDER = 600;
+const FREE_SHIPPING_THRESHOLD = 1200;
+const SHIPPING_COST = 100;
+
+const formatCardNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 16);
+  return digits.replace(/(.{4})/g, '$1 ').trim();
 };
 
-const MINIMUM_ORDER = 25;
+const formatExpiry = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+};
 
 const DeliverySection = React.memo(function DeliverySection() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -43,17 +58,38 @@ const DeliverySection = React.memo(function DeliverySection() {
     notes: '',
     errors: {},
   });
+  const [payment, setPayment] = useState<PaymentMethod | null>(null);
+  const [card, setCard] = useState<CardForm>({
+    number: '',
+    holder: '',
+    expiry: '',
+    cvv: '',
+  });
+  const [cashGiven, setCashGiven] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
 
-  const filteredDishes =
-    activeCategory === 'all'
-      ? menuData
-      : menuData.filter((d) => d.category === activeCategory);
+  const filteredDishes = useMemo(
+    () =>
+      activeCategory === 'all'
+        ? menuData
+        : menuData.filter((d) => d.category === activeCategory),
+    [activeCategory],
+  );
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const hasItems = cart.length > 0;
+  const reachesMinimum = subtotal >= MINIMUM_ORDER;
+  const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const shipping = !hasItems || freeShipping ? 0 : SHIPPING_COST;
+  const total = subtotal + shipping;
+
+  const cashGivenNum = parseFloat(cashGiven.replace(',', '.'));
+  const cashIsValid = !Number.isNaN(cashGivenNum) && cashGiven.trim() !== '';
+  const change = cashIsValid ? cashGivenNum - total : 0;
+  const cashShort = cashIsValid && change < 0;
 
   const addToCart = useCallback((dishId: string) => {
     const dish = menuData.find((d) => d.id === dishId)!;
@@ -95,6 +131,31 @@ const DeliverySection = React.memo(function DeliverySection() {
     [],
   );
 
+  const updateCard = useCallback((field: keyof CardForm, value: string) => {
+    setCard((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  // Validez en vivo para habilitar/deshabilitar el botón
+  const contactValid = useMemo(() => {
+    const nameOk = form.name.trim().length >= 2;
+    const phoneOk = /^[+]?[\d\s\-()]{9,}$/.test(form.phone.replace(/\s/g, ''));
+    const addressOk = form.address.trim().length >= 10;
+    return nameOk && phoneOk && addressOk;
+  }, [form.name, form.phone, form.address]);
+
+  const cardComplete = useMemo(() => {
+    const numberOk = card.number.replace(/\D/g, '').length >= 15;
+    const holderOk = card.holder.trim().length >= 3;
+    const expiryOk = /^\d{2}\/\d{2}$/.test(card.expiry);
+    const cvvOk = /^\d{3,4}$/.test(card.cvv);
+    return numberOk && holderOk && expiryOk && cvvOk;
+  }, [card]);
+
+  const paymentValid = payment === 'efectivo' || (payment === 'tarjeta' && cardComplete);
+
+  const canConfirm =
+    hasItems && reachesMinimum && contactValid && payment !== null && paymentValid;
+
   const validate = useCallback((): boolean => {
     const errors: DeliveryForm['errors'] = {};
     if (!form.name.trim() || form.name.trim().length < 2)
@@ -110,7 +171,7 @@ const DeliverySection = React.memo(function DeliverySection() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (cart.length === 0 || cartTotal < MINIMUM_ORDER) return;
+      if (!canConfirm) return;
       if (!validate()) return;
 
       setIsSubmitting(true);
@@ -120,13 +181,16 @@ const DeliverySection = React.memo(function DeliverySection() {
       setIsSubmitting(false);
       setIsModalOpen(true);
     },
-    [cart, cartTotal, validate],
+    [canConfirm, validate],
   );
 
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setCart([]);
     setForm({ name: '', phone: '', address: '', notes: '', errors: {} });
+    setPayment(null);
+    setCard({ number: '', holder: '', expiry: '', cvv: '' });
+    setCashGiven('');
   }, []);
 
   return (
@@ -143,27 +207,27 @@ const DeliverySection = React.memo(function DeliverySection() {
         <SectionTitle
           label="Pedidos a Domicilio"
           title="Tu Mesa en Casa"
-          subtitle="Disfruta de nuestra cocina en la comodidad de tu hogar. Entrega en 45–60 minutos dentro de Madrid capital."
+          subtitle="Disfruta de nuestra cocina en la comodidad de tu hogar. Entrega en 45–60 minutos dentro de La Ceiba."
           className="mb-12"
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 items-start">
           {/* Menú para pedir */}
           <div>
-            {/* Filtros de categoría */}
+            {/* Filtros de categoría (derivados de menuCategories) */}
             <div className="flex flex-wrap gap-2 mb-6">
-              {Object.entries(categoryLabels).map(([value, label]) => (
+              {menuCategories.map((cat) => (
                 <button
-                  key={value}
-                  onClick={() => setActiveCategory(value)}
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.value)}
                   className={[
-                    'px-4 py-1.5 text-xs font-body tracking-widest uppercase transition-all duration-200',
-                    activeCategory === value
+                    'min-h-[44px] px-4 py-2 text-xs font-body tracking-widest uppercase transition-all duration-200',
+                    activeCategory === cat.value
                       ? 'text-gold border-b border-gold'
                       : 'text-warmgray hover:text-cream',
                   ].join(' ')}
                 >
-                  {label}
+                  {cat.label}
                 </button>
               ))}
             </div>
@@ -196,7 +260,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                           {dish.name}
                         </h4>
                         <span className="font-body text-gold text-sm flex-shrink-0">
-                          {dish.price}€
+                          L{dish.price}
                         </span>
                       </div>
                       <p className="font-body text-[11px] text-warmgray leading-relaxed mb-3 line-clamp-2">
@@ -207,16 +271,18 @@ const DeliverySection = React.memo(function DeliverySection() {
                         <div className="flex items-center justify-between">
                           <button
                             onClick={() => decreaseFromCart(dish.id)}
-                            className="w-7 h-7 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold/10 transition-colors text-base leading-none"
+                            aria-label={`Quitar una unidad de ${dish.name}`}
+                            className="w-11 h-11 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold/10 transition-colors text-xl leading-none"
                           >
                             −
                           </button>
-                          <span className="font-body text-sm text-cream w-8 text-center">
+                          <span className="font-body text-sm text-cream w-10 text-center">
                             {cartItem.quantity}
                           </span>
                           <button
                             onClick={() => addToCart(dish.id)}
-                            className="w-7 h-7 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold/10 transition-colors text-base leading-none"
+                            aria-label={`Añadir una unidad de ${dish.name}`}
+                            className="w-11 h-11 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold/10 transition-colors text-xl leading-none"
                           >
                             +
                           </button>
@@ -224,7 +290,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                       ) : (
                         <button
                           onClick={() => addToCart(dish.id)}
-                          className="w-full py-1.5 text-xs font-body tracking-widest text-gold border border-gold/30 hover:bg-gold/10 transition-all duration-200"
+                          className="w-full min-h-[44px] py-2 text-xs font-body tracking-widest text-gold border border-gold/30 hover:bg-gold/10 transition-all duration-200"
                         >
                           Añadir al pedido
                         </button>
@@ -255,7 +321,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                     Añade platos para comenzar tu pedido
                   </p>
                   <p className="font-body text-xs text-warmgray/40 mt-1">
-                    Mínimo {MINIMUM_ORDER}€
+                    Mínimo L{MINIMUM_ORDER}
                   </p>
                 </div>
               ) : (
@@ -268,15 +334,15 @@ const DeliverySection = React.memo(function DeliverySection() {
                             {item.name}
                           </p>
                           <p className="font-body text-[11px] text-warmgray">
-                            {item.price}€ × {item.quantity}
+                            L{item.price} × {item.quantity}
                           </p>
                         </div>
-                        <span className="font-body text-xs text-gold flex-shrink-0 w-10 text-right">
-                          {item.price * item.quantity}€
+                        <span className="font-body text-xs text-gold flex-shrink-0 w-12 text-right">
+                          L{item.price * item.quantity}
                         </span>
                         <button
                           onClick={() => removeFromCart(item.dishId)}
-                          className="text-warmgray/40 hover:text-cream transition-colors text-sm leading-none flex-shrink-0"
+                          className="w-11 h-11 flex items-center justify-center text-warmgray/40 hover:text-cream transition-colors text-sm leading-none flex-shrink-0"
                           aria-label={`Eliminar ${item.name}`}
                         >
                           ✕
@@ -285,21 +351,37 @@ const DeliverySection = React.memo(function DeliverySection() {
                     ))}
                   </div>
 
-                  <div className="border-t border-charcoal-light pt-3">
-                    <div className="flex justify-between mb-1">
-                      <span className="font-body text-sm text-warmgray">Total</span>
-                      <span className="font-body text-sm text-gold font-medium">
-                        {cartTotal}€
+                  <div className="border-t border-charcoal-light pt-3 flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="font-body text-xs text-warmgray">Subtotal</span>
+                      <span className="font-body text-xs text-cream">L{subtotal}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-body text-xs text-warmgray">Envío</span>
+                      <span className="font-body text-xs text-cream">
+                        {shipping === 0 ? 'Gratis' : `L${shipping}`}
                       </span>
                     </div>
-                    {cartTotal < MINIMUM_ORDER && (
+                    <div className="flex justify-between mt-1 pt-1 border-t border-charcoal-light/60">
+                      <span className="font-body text-sm text-warmgray">Total</span>
+                      <span className="font-body text-sm text-gold font-medium">
+                        L{total}
+                      </span>
+                    </div>
+                    {!reachesMinimum && (
                       <p className="font-body text-[10px] text-terracotta mt-1">
-                        Pedido mínimo {MINIMUM_ORDER}€ · Faltan {MINIMUM_ORDER - cartTotal}€
+                        Pedido mínimo L{MINIMUM_ORDER} · Faltan L{MINIMUM_ORDER - subtotal}
                       </p>
                     )}
-                    {cartTotal >= 50 && (
+                    {freeShipping && (
                       <p className="font-body text-[10px] text-gold/70 mt-1">
                         ✓ Envío gratuito aplicado
+                      </p>
+                    )}
+                    {!freeShipping && hasItems && (
+                      <p className="font-body text-[10px] text-warmgray/50 mt-1">
+                        Envío gratis desde L{FREE_SHIPPING_THRESHOLD} · Faltan{' '}
+                        L{FREE_SHIPPING_THRESHOLD - subtotal}
                       </p>
                     )}
                   </div>
@@ -328,7 +410,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                   onChange={(e) => updateField('phone', e.target.value)}
                 />
                 <Input
-                  label="Dirección completa"
+                  label="Dirección de entrega (ubicación)"
                   type="text"
                   value={form.address}
                   error={form.errors.address}
@@ -342,8 +424,184 @@ const DeliverySection = React.memo(function DeliverySection() {
                   onChange={(e) => updateField('notes', e.target.value)}
                 />
 
+                {/* Método de pago */}
+                <div>
+                  <p className="font-body text-[11px] text-warmgray tracking-wider uppercase mb-3">
+                    Método de pago
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPayment('tarjeta')}
+                      aria-pressed={payment === 'tarjeta'}
+                      className={[
+                        'min-h-[64px] flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-sm border transition-all duration-200',
+                        payment === 'tarjeta'
+                          ? 'border-gold bg-gold/10 text-gold'
+                          : 'border-charcoal text-warmgray hover:border-gold/40 hover:text-cream',
+                      ].join(' ')}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">
+                        💳
+                      </span>
+                      <span className="font-body text-xs tracking-wide">Tarjeta</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPayment('efectivo')}
+                      aria-pressed={payment === 'efectivo'}
+                      className={[
+                        'min-h-[64px] flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-sm border transition-all duration-200',
+                        payment === 'efectivo'
+                          ? 'border-gold bg-gold/10 text-gold'
+                          : 'border-charcoal text-warmgray hover:border-gold/40 hover:text-cream',
+                      ].join(' ')}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">
+                        💵
+                      </span>
+                      <span className="font-body text-xs tracking-wide">Efectivo</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campos de tarjeta (simulado) */}
+                {payment === 'tarjeta' && (
+                  <div className="flex flex-col gap-4 border border-gold/10 bg-charcoal/30 p-4 rounded-sm">
+                    <Input
+                      label="Número de tarjeta"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                      value={card.number}
+                      onChange={(e) =>
+                        updateCard('number', formatCardNumber(e.target.value))
+                      }
+                    />
+                    <Input
+                      label="Titular de la tarjeta"
+                      type="text"
+                      autoComplete="cc-name"
+                      value={card.holder}
+                      onChange={(e) => updateCard('holder', e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        label="Vencimiento (MM/AA)"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="cc-exp"
+                        value={card.expiry}
+                        onChange={(e) =>
+                          updateCard('expiry', formatExpiry(e.target.value))
+                        }
+                      />
+                      <Input
+                        label="CVV"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                        value={card.cvv}
+                        onChange={(e) =>
+                          updateCard(
+                            'cvv',
+                            e.target.value.replace(/\D/g, '').slice(0, 4),
+                          )
+                        }
+                      />
+                    </div>
+                    <p className="font-body text-[11px] text-gold/80 leading-relaxed">
+                      Pago simulado — no se realiza ningún cobro real.
+                    </p>
+                  </div>
+                )}
+
+                {/* Pago en efectivo */}
+                {payment === 'efectivo' && (
+                  <div className="flex flex-col gap-3 border border-gold/10 bg-charcoal/30 p-4 rounded-sm">
+                    <p className="font-body text-xs text-cream leading-relaxed">
+                      Pagarás en efectivo al recibir el pedido.
+                    </p>
+                    <Input
+                      label="¿Con cuánto pagas? (opcional)"
+                      type="text"
+                      inputMode="decimal"
+                      value={cashGiven}
+                      onChange={(e) =>
+                        setCashGiven(e.target.value.replace(/[^\d.,]/g, ''))
+                      }
+                    />
+                    {cashIsValid && !cashShort && (
+                      <p className="font-body text-xs text-gold/80">
+                        Cambio a devolver:{' '}
+                        <span className="font-medium">L{change.toFixed(2)}</span>
+                      </p>
+                    )}
+                    {cashShort && (
+                      <p className="font-body text-xs text-terracotta">
+                        El importe es menor al total (L{total}). Lleva el efectivo
+                        suficiente.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Resumen del pedido */}
+                <div className="border border-gold/10 bg-charcoal/40 p-4 rounded-sm">
+                  <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-3">
+                    Resumen del pedido
+                  </p>
+                  {hasItems ? (
+                    <div className="flex flex-col gap-1.5">
+                      {cart.map((item) => (
+                        <div key={item.dishId} className="flex justify-between gap-3">
+                          <span className="font-body text-xs text-cream min-w-0 truncate">
+                            {item.name} × {item.quantity}
+                          </span>
+                          <span className="font-body text-xs text-gold flex-shrink-0">
+                            L{item.price * item.quantity}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between border-t border-charcoal-light mt-2 pt-2">
+                        <span className="font-body text-xs text-warmgray">Subtotal</span>
+                        <span className="font-body text-xs text-cream">L{subtotal}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-body text-xs text-warmgray">Envío</span>
+                        <span className="font-body text-xs text-cream">
+                          {shipping === 0 ? 'Gratis' : `L${shipping}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between mt-1 pt-1 border-t border-charcoal-light/60">
+                        <span className="font-body text-sm text-warmgray">Total</span>
+                        <span className="font-body text-sm text-gold font-medium">
+                          L{total}
+                        </span>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="font-body text-xs text-warmgray">
+                          Método de pago
+                        </span>
+                        <span className="font-body text-xs text-cream">
+                          {payment === 'tarjeta'
+                            ? '💳 Tarjeta'
+                            : payment === 'efectivo'
+                              ? '💵 Efectivo'
+                              : 'Sin elegir'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="font-body text-xs text-warmgray/60">
+                      Tu resumen aparecerá aquí cuando añadas platos.
+                    </p>
+                  )}
+                </div>
+
                 <p className="font-body text-[11px] text-warmgray/60 leading-relaxed">
-                  Entrega en 45–60 min · Madrid capital · Envío gratuito desde 50€
+                  Entrega en 45–60 min · La Ceiba · Envío gratuito desde{' '}
+                  L{FREE_SHIPPING_THRESHOLD}
                 </p>
 
                 <Button
@@ -352,10 +610,12 @@ const DeliverySection = React.memo(function DeliverySection() {
                   size="lg"
                   fullWidth
                   loading={isSubmitting}
-                  disabled={cart.length === 0 || cartTotal < MINIMUM_ORDER}
+                  disabled={!canConfirm}
                   className="mt-1"
                 >
-                  {isSubmitting ? 'Procesando pedido...' : 'Confirmar Pedido'}
+                  {isSubmitting
+                    ? 'Procesando pedido...'
+                    : `Confirmar Pedido${hasItems ? ` · L${total}` : ''}`}
                 </Button>
               </form>
             </div>
@@ -368,9 +628,14 @@ const DeliverySection = React.memo(function DeliverySection() {
         onClose={handleModalClose}
         orderNumber={orderNumber}
         items={cart}
-        total={cartTotal}
+        subtotal={subtotal}
+        shipping={shipping}
+        total={total}
         address={form.address}
         name={form.name}
+        paymentMethod={payment}
+        cashGiven={payment === 'efectivo' && cashIsValid ? cashGivenNum : undefined}
+        change={payment === 'efectivo' && cashIsValid && !cashShort ? change : undefined}
       />
     </section>
   );

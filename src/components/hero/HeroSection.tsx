@@ -3,6 +3,7 @@ import gsap from "gsap";
 import HeroVideo from "./HeroVideo";
 import SpiceParticles from "./SpiceParticles";
 import ScrollIndicator from "./ScrollIndicator";
+import FeaturedDishes from "./FeaturedDishes";
 import Button from "../ui/Button";
 import { useSmoothScroll } from "../../hooks/useSmoothScroll";
 
@@ -61,10 +62,9 @@ const HeroSection = React.memo(function HeroSection() {
   ));
 
   return (
-    <section
-      id="inicio"
-      className="relative w-full h-screen min-h-[600px] overflow-hidden flex items-center justify-center"
-    >
+    <section id="inicio">
+      {/* Hero a pantalla completa */}
+      <div className="relative w-full h-screen min-h-[600px] overflow-hidden flex items-center justify-center">
       {/* Video/Imagen de fondo */}
       <HeroVideo />
 
@@ -106,25 +106,37 @@ const HeroSection = React.memo(function HeroSection() {
         {/* Botones CTA */}
         <div
           ref={ctaRef}
-          className="flex flex-col sm:flex-row gap-4 items-center"
+          className="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-center justify-center w-full max-w-md sm:max-w-none"
         >
           <Button
             variant="primary"
             size="lg"
+            fullWidth
             data-cursor="expand"
-            onClick={() => scrollTo("#reservacion")}
-            className="tracking-widest"
+            onClick={() => scrollTo("#reservaciones")}
+            className="tracking-widest sm:w-auto"
           >
             Reservar Mesa
           </Button>
           <Button
             variant="outline"
             size="lg"
+            fullWidth
             data-cursor="expand"
-            onClick={() => scrollTo("#menu")}
-            className="tracking-widest"
+            onClick={() => scrollTo("#delivery")}
+            className="tracking-widest sm:w-auto"
           >
-            Ver Carta
+            Pedir a Domicilio
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            fullWidth
+            data-cursor="expand"
+            onClick={() => scrollTo("#platillos")}
+            className="tracking-widest sm:w-auto"
+          >
+            Ver Platillos
           </Button>
         </div>
       </div>
@@ -144,10 +156,14 @@ const HeroSection = React.memo(function HeroSection() {
 
       <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col items-center gap-4">
         <span className="writing-mode-vertical font-body text-xs text-gold/40 tracking-widest uppercase">
-          Madrid, España
+          La Ceiba, Honduras
         </span>
         <span className="w-px h-16 bg-gold/20" />
       </div>
+      </div>
+
+      {/* Platillos destacados, dentro de la sección #inicio */}
+      <FeaturedDishes />
     </section>
   );
 });
