@@ -147,7 +147,7 @@ const TableMap = React.memo(function TableMap({
       {/* Plano interactivo */}
       <div
         ref={planeRef}
-        className="relative bg-charcoal/50 border border-charcoal-light rounded-sm overflow-hidden h-[300px] sm:h-[330px]"
+        className="relative bg-charcoal/50 border border-charcoal-light rounded-sm overflow-hidden aspect-[4/3]"
         style={{
           backgroundImage:
             'linear-gradient(rgba(212,165,116,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(212,165,116,0.05) 1px, transparent 1px)',
@@ -227,36 +227,38 @@ const TableMap = React.memo(function TableMap({
       {activeTable && activeInfo ? (
         <div
           key={activeTable.id}
-          className="flex items-center gap-3 border border-gold/15 bg-charcoal/40 rounded-sm p-3 min-h-[76px] animate-fade-in"
+          className="flex flex-col gap-3 sm:flex-row sm:items-center border border-gold/15 bg-charcoal/40 rounded-sm p-3 min-h-[76px] animate-fade-in"
         >
-          {/* mini-ficha con número y plazas */}
-          <div className="flex-shrink-0 w-12 h-12 rounded-full border border-gold/40 bg-charcoal-deep flex flex-col items-center justify-center">
-            <span className="font-display text-base text-gold leading-none">
-              {activeTable.number}
-            </span>
-            <span className="text-[8px] text-warmgray/70 mt-0.5">
-              {activeTable.capacity}p
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-body text-sm text-cream leading-tight">
-              Mesa {activeTable.number} · {zoneLabels[zone]}
-            </p>
-            <p className="font-body text-xs text-warmgray">
-              Hasta {activeTable.capacity} personas
-            </p>
-            <p
-              className={['font-body text-xs mt-0.5', toneCls[activeInfo.tone]].join(' ')}
-            >
-              {activeInfo.isSel ? '✓ ' : ''}
-              {activeInfo.estado}
-            </p>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* mini-ficha con número y plazas */}
+            <div className="flex-shrink-0 w-12 h-12 rounded-full border border-gold/40 bg-charcoal-deep flex flex-col items-center justify-center">
+              <span className="font-display text-base text-gold leading-none">
+                {activeTable.number}
+              </span>
+              <span className="text-[8px] text-warmgray/70 mt-0.5">
+                {activeTable.capacity}p
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="font-body text-sm text-cream leading-tight">
+                Mesa {activeTable.number} · {zoneLabels[zone]}
+              </p>
+              <p className="font-body text-xs text-warmgray">
+                Hasta {activeTable.capacity} personas
+              </p>
+              <p
+                className={['font-body text-xs mt-0.5', toneCls[activeInfo.tone]].join(' ')}
+              >
+                {activeInfo.isSel ? '✓ ' : ''}
+                {activeInfo.estado}
+              </p>
+            </div>
           </div>
           {activeInfo.selectable && (
             <button
               type="button"
               onClick={() => onTableSelect(activeTable.id)}
-              className="flex-shrink-0 min-h-[40px] px-4 text-xs font-body tracking-wide text-charcoal-deep bg-gold hover:bg-gold-dark rounded-sm transition-colors"
+              className="w-full sm:w-auto flex-shrink-0 min-h-[44px] px-4 text-xs font-body tracking-wide text-charcoal-deep bg-gold hover:bg-gold-dark rounded-sm transition-colors"
             >
               Elegir
             </button>

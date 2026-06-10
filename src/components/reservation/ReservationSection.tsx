@@ -1,9 +1,63 @@
 import React, { useState, useCallback } from 'react';
+import {
+  FiCalendar,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiPhone,
+  FiClock,
+  FiMapPin,
+} from 'react-icons/fi';
 import SectionTitle from '../ui/SectionTitle';
 import ReservationForm from './ReservationForm';
 import TableMap from './TableMap';
 import ReservationModal from './ReservationModal';
 import { useReservation } from './useReservation';
+import type { ReservationZone } from '../../types/reservation.types';
+
+const zoneTabs: { value: ReservationZone; label: string }[] = [
+  { value: 'interior', label: 'Interior' },
+  { value: 'terraza', label: 'Terraza' },
+  { value: 'barra', label: 'Barra' },
+];
+
+const policies = [
+  {
+    icon: <FiCalendar size={18} />,
+    title: 'Hasta 5 días antes',
+    text: 'Reserva tu mesa con un máximo de 5 días de anticipación.',
+  },
+  {
+    icon: <FiCheckCircle size={18} />,
+    title: 'Cancelación gratuita',
+    text: 'Sin costo si cancelas 5 horas o más antes de tu reserva.',
+  },
+  {
+    icon: <FiAlertCircle size={18} />,
+    title: 'Recargo de L400',
+    text: 'Cancelaciones con menos de 5 horas aplican un recargo de L400.',
+  },
+];
+
+const contactInfo = [
+  {
+    icon: <FiPhone size={16} />,
+    label: 'Teléfono',
+    value: '+504 2440-1234',
+    sub: 'Reservas y consultas',
+  },
+  {
+    icon: <FiClock size={16} />,
+    label: 'Horario',
+    value: 'Mar–Dom · 13:00–23:00',
+    sub: 'Cocina hasta las 22:00',
+  },
+  {
+    icon: <FiMapPin size={16} />,
+    label: 'Dirección',
+    value: 'Av. San Isidro, La Ceiba',
+    sub: 'A 2 cuadras del Parque Central',
+  },
+];
 
 const ReservationSection = React.memo(function ReservationSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,44 +88,75 @@ const ReservationSection = React.memo(function ReservationSection() {
         <SectionTitle
           label="Reservaciones"
           title="Reserve su Mesa"
-          subtitle="Una experiencia que comienza desde el momento en que elige su noche perfecta."
-          className="mb-12"
+          subtitle="Elige tu día, tu zona y la mesa que prefieras. Te confirmamos al instante."
+          className="mb-10 lg:mb-14"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 items-start">
-          {/* Formulario */}
-          <div className="bg-charcoal-light/30 border border-gold/10 p-6 md:p-8">
-            <h3 className="font-display text-xl text-cream mb-6">
-              Datos de la Reserva
-            </h3>
+        {/* Reglas de reserva */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 lg:mb-14">
+          {policies.map((p) => (
+            <div
+              key={p.title}
+              className="flex items-start gap-3.5 bg-charcoal-light/30 border border-gold/10 rounded-sm p-5"
+            >
+              <span className="flex-shrink-0 w-10 h-10 rounded-full border border-gold/30 bg-charcoal-deep flex items-center justify-center text-gold">
+                {p.icon}
+              </span>
+              <div className="min-w-0">
+                <p className="font-body text-sm text-cream font-medium">
+                  {p.title}
+                </p>
+                <p className="font-body text-xs text-warmgray leading-relaxed mt-1">
+                  {p.text}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Formulario + mapa */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+          {/* Paso 1: Formulario */}
+          <div className="bg-charcoal-light/30 border border-gold/10 rounded-sm p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gold/15 text-gold flex items-center justify-center font-body text-xs font-semibold">
+                1
+              </span>
+              <h3 className="font-display text-xl text-cream">
+                Detalles de tu reserva
+              </h3>
+            </div>
             <ReservationForm
               onSuccess={handleSuccess}
               reservationHook={reservationHook}
             />
           </div>
 
-          {/* Mapa de mesas */}
-          <div className="bg-charcoal-light/30 border border-gold/10 p-6">
-            <h3 className="font-display text-xl text-cream mb-6">
-              Elige tu Mesa
-            </h3>
+          {/* Paso 2: Elegir mesa */}
+          <div className="bg-charcoal-light/30 border border-gold/10 rounded-sm p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gold/15 text-gold flex items-center justify-center font-body text-xs font-semibold">
+                2
+              </span>
+              <h3 className="font-display text-xl text-cream">Elige tu mesa</h3>
+            </div>
 
-            {/* Selector de zona como tabs */}
-            <div className="flex gap-1 mb-6 bg-charcoal-deep/50 p-1">
-              {(['interior', 'terraza', 'barra'] as const).map((zone) => (
+            {/* Selector de zona */}
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              {zoneTabs.map((z) => (
                 <button
-                  key={zone}
+                  key={z.value}
                   type="button"
-                  onClick={() => reservationHook.setZone(zone)}
-                  aria-pressed={state.zone === zone}
+                  onClick={() => reservationHook.setZone(z.value)}
+                  aria-pressed={state.zone === z.value}
                   className={[
-                    'flex-1 min-h-[44px] py-2 px-2 text-xs sm:text-sm font-body tracking-wider transition-all duration-200',
-                    state.zone === zone
-                      ? 'bg-gold/20 text-gold border-b border-gold'
-                      : 'text-warmgray hover:text-cream',
+                    'min-h-[44px] py-2 px-2 rounded-sm text-xs sm:text-sm font-body tracking-wide transition-all duration-200 border',
+                    state.zone === z.value
+                      ? 'bg-gold text-charcoal-deep border-gold font-semibold shadow-[0_0_18px_rgba(212,165,116,0.25)]'
+                      : 'bg-charcoal-deep/40 text-warmgray border-gold/10 hover:border-gold/40 hover:text-cream',
                   ].join(' ')}
                 >
-                  {zone.charAt(0).toUpperCase() + zone.slice(1)}
+                  {z.label}
                 </button>
               ))}
             </div>
@@ -89,18 +174,19 @@ const ReservationSection = React.memo(function ReservationSection() {
         </div>
 
         {/* Información de contacto */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-charcoal-light pt-8">
-          {[
-            { label: 'Teléfono', value: '+504 2440-1234', sub: 'Reservas y consultas' },
-            { label: 'Horario', value: 'Mar–Dom 13:00–23:00', sub: 'Cocina hasta las 22:00' },
-            { label: 'Dirección', value: 'Av. San Isidro, La Ceiba', sub: 'A 2 cuadras del Parque Central' },
-          ].map(({ label, value, sub }) => (
-            <div key={label} className="text-center">
-              <p className="font-body text-xs text-gold tracking-widest uppercase mb-1">
-                {label}
-              </p>
-              <p className="font-body text-sm text-cream">{value}</p>
-              <p className="font-body text-xs text-warmgray">{sub}</p>
+        <div className="mt-10 lg:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-4 border-t border-charcoal-light pt-8">
+          {contactInfo.map((c) => (
+            <div key={c.label} className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-9 h-9 rounded-full border border-gold/20 bg-charcoal-deep/40 text-gold flex items-center justify-center">
+                {c.icon}
+              </span>
+              <div className="min-w-0">
+                <p className="font-body text-[10px] text-gold tracking-widest uppercase mb-0.5">
+                  {c.label}
+                </p>
+                <p className="font-body text-sm text-cream">{c.value}</p>
+                <p className="font-body text-xs text-warmgray">{c.sub}</p>
+              </div>
             </div>
           ))}
         </div>

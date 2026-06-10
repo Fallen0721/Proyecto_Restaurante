@@ -101,7 +101,7 @@ const ReservationModal = React.memo(function ReservationModal({
         className="absolute inset-0 overflow-hidden pointer-events-none z-10"
       />
 
-      <div className="p-8 text-center relative z-20">
+      <div className="p-6 sm:p-8 text-center relative z-20">
         {/* Ícono de éxito */}
         <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-gold flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">

@@ -1,18 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { useSmoothScroll } from "../../hooks/useSmoothScroll";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 
-interface NavLink {
-  href: string;
+interface NavItem {
+  to: string;
   label: string;
 }
 
-const navLinks: NavLink[] = [
-  { href: "#inicio", label: "Inicio" },
-  { href: "#nosotros", label: "Nosotros" },
-  { href: "#platillos", label: "Platillos" },
-  { href: "#delivery", label: "Delivery" },
-  { href: "#reservaciones", label: "Reservaciones" },
+const navItems: NavItem[] = [
+  { to: "/", label: "Inicio" },
+  { to: "/nosotros", label: "Nosotros" },
+  { to: "/platillos", label: "Platillos" },
+  { to: "/delivery", label: "Delivery" },
+  { to: "/reservaciones", label: "Reservaciones" },
 ];
 
 const Navbar = React.memo(function Navbar() {
@@ -20,16 +20,26 @@ const Navbar = React.memo(function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const { scrollTo } = useSmoothScroll();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Efecto scroll para cambiar fondo
+  // En el Inicio la barra es transparente arriba; en el resto de páginas siempre sólida.
+  const isHome = location.pathname === "/";
+  const solid = scrolled || !isHome;
+
+  // Efecto scroll para cambiar el fondo
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 100);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Animación del menú mobile
+  // Cerrar el menú móvil al cambiar de página
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Animación del menú móvil
   useEffect(() => {
     if (!mobileMenuRef.current) return;
 
@@ -51,12 +61,11 @@ const Navbar = React.memo(function Navbar() {
     } else {
       document.body.style.overflow = "";
     }
-  }, [mobileOpen]);
 
-  const handleNavClick = (href: string) => {
-    scrollTo(href);
-    setMobileOpen(false);
-  };
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   return (
     <>
@@ -64,15 +73,15 @@ const Navbar = React.memo(function Navbar() {
         ref={navRef}
         className={[
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-          scrolled
+          solid
             ? "bg-charcoal-deep/85 backdrop-blur-xl border-b border-gold/10 py-3"
             : "bg-transparent py-5",
         ].join(" ")}
       >
         <div className="section-container flex items-center justify-between">
           {/* Logo */}
-          <button
-            onClick={() => handleNavClick("#inicio")}
+          <Link
+            to="/"
             data-cursor="expand"
             className="flex flex-col items-start"
             aria-label="Ir al inicio"
@@ -83,26 +92,32 @@ const Navbar = React.memo(function Navbar() {
             <span className="font-body text-[9px] text-warmgray/70 tracking-[0.35em] uppercase">
               Alta Cocina
             </span>
-          </button>
+          </Link>
 
           {/* Links desktop */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => handleNavClick(link.href)}
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
                 data-cursor="expand"
-                className="nav-link font-body text-sm text-warmgray hover:text-cream transition-colors duration-200 tracking-wide"
+                className={({ isActive }) =>
+                  [
+                    "nav-link font-body text-sm tracking-wide transition-colors duration-200",
+                    isActive ? "text-gold" : "text-warmgray hover:text-cream",
+                  ].join(" ")
+                }
               >
-                {link.label}
-              </button>
+                {item.label}
+              </NavLink>
             ))}
           </div>
 
           {/* CTA desktop */}
           <div className="hidden lg:block">
             <button
-              onClick={() => handleNavClick("#reservaciones")}
+              onClick={() => navigate("/reservaciones")}
               data-cursor="expand"
               className="font-body text-sm text-charcoal-deep bg-gold hover:bg-gold-dark px-5 py-2.5 tracking-wider transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,165,116,0.3)]"
             >
@@ -110,7 +125,7 @@ const Navbar = React.memo(function Navbar() {
             </button>
           </div>
 
-          {/* Hamburguesa mobile */}
+          {/* Hamburguesa móvil */}
           <button
             onClick={() => setMobileOpen((prev) => !prev)}
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
@@ -139,25 +154,31 @@ const Navbar = React.memo(function Navbar() {
         </div>
       </nav>
 
-      {/* Menú mobile fullscreen */}
+      {/* Menú móvil a pantalla completa */}
       {mobileOpen && (
         <div
           ref={mobileMenuRef}
           className="fixed inset-0 z-40 bg-charcoal-deep/97 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
         >
-          {navLinks.map((link) => (
-            <button
-              key={link.href}
-              onClick={() => handleNavClick(link.href)}
-              className={[
-                "mobile-link font-display text-3xl transition-colors duration-200",
-                link.href === "#reservaciones"
-                  ? "text-gold hover:text-gold-light"
-                  : "text-cream hover:text-gold",
-              ].join(" ")}
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                [
+                  "mobile-link font-display text-3xl transition-colors duration-200",
+                  item.to === "/reservaciones"
+                    ? "text-gold hover:text-gold-light"
+                    : isActive
+                      ? "text-gold"
+                      : "text-cream hover:text-gold",
+                ].join(" ")
+              }
             >
-              {link.label}
-            </button>
+              {item.label}
+            </NavLink>
           ))}
           <div className="flex items-center gap-4 mt-4">
             <span className="w-8 h-px bg-gold/40" />

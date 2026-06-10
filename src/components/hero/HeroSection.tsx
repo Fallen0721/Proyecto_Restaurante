@@ -5,14 +5,14 @@ import SpiceParticles from "./SpiceParticles";
 import ScrollIndicator from "./ScrollIndicator";
 import FeaturedDishes from "./FeaturedDishes";
 import Button from "../ui/Button";
-import { useSmoothScroll } from "../../hooks/useSmoothScroll";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = React.memo(function HeroSection() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const taglineRef = useRef<HTMLDivElement>(null);
-  const { scrollTo } = useSmoothScroll();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!titleRef.current) return;
@@ -113,7 +113,7 @@ const HeroSection = React.memo(function HeroSection() {
             size="lg"
             fullWidth
             data-cursor="expand"
-            onClick={() => scrollTo("#reservaciones")}
+            onClick={() => navigate("/reservaciones")}
             className="tracking-widest sm:w-auto"
           >
             Reservar Mesa
@@ -123,7 +123,7 @@ const HeroSection = React.memo(function HeroSection() {
             size="lg"
             fullWidth
             data-cursor="expand"
-            onClick={() => scrollTo("#delivery")}
+            onClick={() => navigate("/delivery")}
             className="tracking-widest sm:w-auto"
           >
             Pedir a Domicilio
@@ -133,7 +133,7 @@ const HeroSection = React.memo(function HeroSection() {
             size="lg"
             fullWidth
             data-cursor="expand"
-            onClick={() => scrollTo("#platillos")}
+            onClick={() => navigate("/platillos")}
             className="tracking-widest sm:w-auto"
           >
             Ver Platillos

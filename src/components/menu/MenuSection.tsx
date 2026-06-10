@@ -3,13 +3,12 @@ import gsap from 'gsap';
 import SectionTitle from '../ui/SectionTitle';
 import DishCard from './DishCard';
 import { menuData, menuCategories } from '../../data/menuData';
-import { useSmoothScroll } from '../../hooks/useSmoothScroll';
+import { Link } from 'react-router-dom';
 import type { Dish } from '../../types/menu.types';
 
 const MenuSection = React.memo(function MenuSection() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const gridRef = useRef<HTMLDivElement>(null);
-  const { scrollTo } = useSmoothScroll();
 
   const filteredDishes = useMemo<Dish[]>(() => {
     if (activeCategory === 'all') return menuData;
@@ -35,11 +34,6 @@ const MenuSection = React.memo(function MenuSection() {
     }, gridRef);
     return () => ctx.revert();
   }, [filteredDishes]);
-
-  const handleReservar = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    scrollTo('#reservaciones');
-  };
 
   return (
     <section id="platillos" className="relative section-padding bg-charcoal-deep overflow-hidden">
@@ -131,16 +125,15 @@ const MenuSection = React.memo(function MenuSection() {
           <p className="font-body text-warmgray text-sm mb-4">
             Ofrecemos menú degustación de 7 pasos bajo reserva previa
           </p>
-          <a
-            href="#reservaciones"
-            onClick={handleReservar}
+          <Link
+            to="/reservaciones"
             className="inline-flex items-center gap-2 min-h-[44px] font-body text-sm text-gold hover:text-gold-light tracking-wider uppercase transition-colors"
           >
             <span>Reservar Experiencia Completa</span>
             <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
               <path d="M1 5H15M11 1L15 5L11 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

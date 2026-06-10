@@ -17,6 +17,14 @@ const Input = React.memo(function Input({
   const [focused, setFocused] = useState(false);
   const inputId = id || label.toLowerCase().replace(/\s/g, '-');
 
+  // Los inputs de fecha/hora muestran SIEMPRE su formato nativo (dd/mm/aaaa),
+  // por eso su etiqueta debe quedar siempre arriba y no encimarse con el formato.
+  const alwaysFloat = ['date', 'time', 'datetime-local', 'month', 'week'].includes(
+    String(props.type)
+  );
+  const floated =
+    focused || (props.value !== undefined && props.value !== '') || alwaysFloat;
+
   return (
     <div className="relative w-full">
       <div className="relative">
@@ -54,7 +62,7 @@ const Input = React.memo(function Input({
           className={[
             'absolute left-4 transition-all duration-200 pointer-events-none font-body',
             icon ? 'left-10' : '',
-            focused || (props.value !== undefined && props.value !== '')
+            floated
               ? 'top-2 text-xs text-gold'
               : 'top-1/2 -translate-y-1/2 text-sm text-warmgray',
           ].join(' ')}

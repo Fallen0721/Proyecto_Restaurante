@@ -5,13 +5,13 @@ import SectionTitle from '../ui/SectionTitle';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import { menuData } from '../../data/menuData';
-import { useSmoothScroll } from '../../hooks/useSmoothScroll';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const FeaturedDishes = React.memo(function FeaturedDishes() {
   const gridRef = useRef<HTMLDivElement>(null);
-  const { scrollTo } = useSmoothScroll();
+  const navigate = useNavigate();
 
   // Platillos firma (máximo 4) para los destacados del inicio
   const featured = menuData.filter((dish) => dish.isSignature).slice(0, 4);
@@ -39,7 +39,7 @@ const FeaturedDishes = React.memo(function FeaturedDishes() {
   }, []);
 
   return (
-    <div className="relative bg-charcoal-deep section-padding overflow-hidden">
+    <div id="destacados" className="relative bg-charcoal-deep section-padding overflow-hidden">
       <div className="section-container">
         <SectionTitle
           label="Nuestros Destacados"
@@ -100,7 +100,7 @@ const FeaturedDishes = React.memo(function FeaturedDishes() {
               size="lg"
               fullWidth
               data-cursor="expand"
-              onClick={() => scrollTo('#delivery')}
+              onClick={() => navigate('/delivery')}
               className="tracking-widest sm:w-auto"
             >
               Pedir a Domicilio
@@ -110,7 +110,7 @@ const FeaturedDishes = React.memo(function FeaturedDishes() {
               size="lg"
               fullWidth
               data-cursor="expand"
-              onClick={() => scrollTo('#reservaciones')}
+              onClick={() => navigate('/reservaciones')}
               className="tracking-widest sm:w-auto"
             >
               Reservar Mesa
@@ -120,7 +120,7 @@ const FeaturedDishes = React.memo(function FeaturedDishes() {
           <button
             type="button"
             data-cursor="expand"
-            onClick={() => scrollTo('#platillos')}
+            onClick={() => navigate('/platillos')}
             className="group flex min-h-[44px] items-center gap-2 px-2 font-body text-sm tracking-widest uppercase text-warmgray transition-colors duration-300 hover:text-gold"
           >
             Ver todos los platillos
