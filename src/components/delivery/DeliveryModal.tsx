@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiCreditCard, FiDollarSign } from 'react-icons/fi';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
@@ -21,14 +22,16 @@ interface DeliveryModalProps {
   total: number;
   address: string;
   name: string;
+  branchName?: string;
+  zone?: string;
   paymentMethod: PaymentMethod | null;
   cashGiven?: number;
   change?: number;
 }
 
-const paymentLabel: Record<PaymentMethod, string> = {
-  tarjeta: '💳 Tarjeta (simulado)',
-  efectivo: '💵 Efectivo al recibir',
+const paymentLabel: Record<PaymentMethod, { icon: React.ReactNode; text: string }> = {
+  tarjeta: { icon: <FiCreditCard aria-hidden="true" />, text: 'Tarjeta (simulado)' },
+  efectivo: { icon: <FiDollarSign aria-hidden="true" />, text: 'Efectivo al recibir' },
 };
 
 const DeliveryModal = React.memo(function DeliveryModal({
@@ -41,6 +44,8 @@ const DeliveryModal = React.memo(function DeliveryModal({
   total,
   address,
   name,
+  branchName,
+  zone,
   paymentMethod,
   cashGiven,
   change,
@@ -114,6 +119,20 @@ const DeliveryModal = React.memo(function DeliveryModal({
             </div>
             <div className="bg-charcoal/50 p-3">
               <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
+                Sucursal
+              </p>
+              <p className="font-body text-xs text-cream truncate">
+                {branchName ?? '—'}
+              </p>
+            </div>
+            <div className="bg-charcoal/50 p-3">
+              <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
+                Zona
+              </p>
+              <p className="font-body text-xs text-cream truncate">{zone || '—'}</p>
+            </div>
+            <div className="bg-charcoal/50 p-3">
+              <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
                 Dirección
               </p>
               <p className="font-body text-xs text-cream truncate">{address}</p>
@@ -124,8 +143,14 @@ const DeliveryModal = React.memo(function DeliveryModal({
             <p className="font-body text-[10px] text-warmgray tracking-wider uppercase mb-1">
               Método de pago
             </p>
-            <p className="font-body text-xs text-cream">
-              {paymentMethod ? paymentLabel[paymentMethod] : '—'}
+            <p className="font-body text-xs text-cream inline-flex items-center gap-1">
+              {paymentMethod ? (
+                <>
+                  {paymentLabel[paymentMethod].icon} {paymentLabel[paymentMethod].text}
+                </>
+              ) : (
+                '—'
+              )}
             </p>
             {paymentMethod === 'efectivo' &&
               cashGiven !== undefined &&

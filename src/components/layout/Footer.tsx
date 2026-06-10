@@ -102,10 +102,10 @@ const Footer = React.memo(function Footer() {
             </div>
             <div className="mt-5 pt-5 border-t border-charcoal-light">
               <p className="font-body text-xs text-warmgray">
-                Av. San Isidro, La Ceiba
+                Av. Circunvalación, Barrio Río de Piedras, San Pedro Sula
               </p>
               <p className="font-body text-xs text-warmgray mt-1">
-                +504 2440-1234
+                +504 2550-1234
               </p>
             </div>
           </div>

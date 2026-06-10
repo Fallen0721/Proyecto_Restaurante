@@ -183,7 +183,7 @@ const Navbar = React.memo(function Navbar() {
           <div className="flex items-center gap-4 mt-4">
             <span className="w-8 h-px bg-gold/40" />
             <span className="font-body text-xs text-warmgray/60 tracking-widest uppercase">
-              La Ceiba, Honduras
+              San Pedro Sula, Honduras
             </span>
             <span className="w-8 h-px bg-gold/40" />
           </div>

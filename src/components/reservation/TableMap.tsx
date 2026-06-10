@@ -3,12 +3,14 @@ import gsap from 'gsap';
 import TableItem from './TableItem';
 import { tablesData } from '../../data/tablesData';
 import { getTableAvailability } from '../../data/reservationsMock';
-import type { ReservationZone } from '../../types/reservation.types';
+import type { ReservationZone, CityId, Floor } from '../../types/reservation.types';
 
 interface TableMapProps {
   date: string;
   time: string;
   zone: ReservationZone;
+  city: CityId;
+  floor: Floor;
   guests: number;
   selectedTable: string | null;
   onTableSelect: (tableId: string) => void;
@@ -37,6 +39,8 @@ const TableMap = React.memo(function TableMap({
   date,
   time,
   zone,
+  city,
+  floor,
   guests,
   selectedTable,
   onTableSelect,
@@ -46,8 +50,11 @@ const TableMap = React.memo(function TableMap({
   const planeRef = useRef<HTMLDivElement>(null);
 
   const zoneTables = useMemo(
-    () => tablesData.filter((t) => t.zone === zone),
-    [zone]
+    () =>
+      tablesData.filter(
+        (t) => t.zone === zone && t.city === city && t.floor === floor
+      ),
+    [zone, city, floor]
   );
 
   const availabilityMap = useMemo(() => {
@@ -77,7 +84,7 @@ const TableMap = React.memo(function TableMap({
       );
     }, planeRef);
     return () => ctx.revert();
-  }, [zone]);
+  }, [zone, city, floor]);
 
   // Mesa "activa": la señalada con el cursor o, si no hay, la seleccionada.
   const activeTable = useMemo(() => {
@@ -157,7 +164,7 @@ const TableMap = React.memo(function TableMap({
         {/* Etiqueta del plano */}
         <div className="absolute top-2 left-2 z-10 pointer-events-none">
           <span className="font-body text-[10px] text-warmgray/50 tracking-widest uppercase">
-            Plano · {zoneLabels[zone]}
+            Plano · {zoneLabels[zone]} · Planta {floor}
           </span>
         </div>
 

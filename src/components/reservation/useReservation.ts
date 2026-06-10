@@ -1,5 +1,10 @@
 import { useState, useCallback } from 'react';
-import type { ReservationState, ReservationZone } from '../../types/reservation.types';
+import type {
+  ReservationState,
+  ReservationZone,
+  CityId,
+  Floor,
+} from '../../types/reservation.types';
 import { isDateInPast, isDateBeyondMax } from '../../utils/dateHelpers';
 import { tablesData } from '../../data/tablesData';
 
@@ -10,6 +15,8 @@ const initialState: ReservationState = {
   name: '',
   email: '',
   phone: '',
+  city: 'sps',
+  floor: 1,
   zone: 'interior',
   selectedTable: null,
   errors: {},
@@ -173,6 +180,25 @@ export function useReservation() {
     }));
   }, []);
 
+  // Cambiar de sucursal o de planta invalida la mesa elegida (otro plano).
+  const setCity = useCallback((city: CityId) => {
+    setState((prev) => ({
+      ...prev,
+      city,
+      selectedTable: null,
+      errors: { ...prev.errors, selectedTable: undefined },
+    }));
+  }, []);
+
+  const setFloor = useCallback((floor: Floor) => {
+    setState((prev) => ({
+      ...prev,
+      floor,
+      selectedTable: null,
+      errors: { ...prev.errors, selectedTable: undefined },
+    }));
+  }, []);
+
   return {
     state,
     updateField,
@@ -181,5 +207,7 @@ export function useReservation() {
     resetForm,
     selectTable,
     setZone,
+    setCity,
+    setFloor,
   };
 }

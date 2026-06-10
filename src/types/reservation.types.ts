@@ -1,8 +1,13 @@
+export type CityId = 'sps' | 'tegus';
+export type Floor = 1 | 2;
+
 export interface Table {
   id: string;
   number: number;
   capacity: 2 | 4 | 6;
   zone: 'interior' | 'terraza' | 'barra';
+  city: CityId;
+  floor: Floor;
   position: { x: number; y: number };
 }
 
@@ -13,6 +18,8 @@ export interface Reservation {
   name: string;
   email: string;
   phone: string;
+  city: CityId;
+  floor: Floor;
   zone: 'interior' | 'terraza' | 'barra';
   tableId?: string;
 }
@@ -28,6 +35,8 @@ export interface ReservationState {
   name: string;
   email: string;
   phone: string;
+  city: CityId;
+  floor: Floor;
   zone: 'interior' | 'terraza' | 'barra';
   selectedTable: string | null;
   errors: Partial<Record<ReservationErrorField, string>>;

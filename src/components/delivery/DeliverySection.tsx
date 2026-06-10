@@ -1,8 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { FiCreditCard, FiDollarSign, FiMapPin } from 'react-icons/fi';
 import SectionTitle from '../ui/SectionTitle';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import Select from '../ui/Select';
 import { menuData, menuCategories } from '../../data/menuData';
+import { branches, branchById } from '../../data/branchesData';
+import type { CityId } from '../../types/reservation.types';
 import DeliveryModal from './DeliveryModal';
 
 interface CartItem {
@@ -17,11 +21,13 @@ type PaymentMethod = 'tarjeta' | 'efectivo';
 interface DeliveryForm {
   name: string;
   phone: string;
+  zone: string;
   address: string;
   notes: string;
   errors: {
     name?: string;
     phone?: string;
+    zone?: string;
     address?: string;
   };
 }
@@ -51,13 +57,16 @@ const formatExpiry = (value: string): string => {
 const DeliverySection = React.memo(function DeliverySection() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [city, setCity] = useState<CityId>('sps');
   const [form, setForm] = useState<DeliveryForm>({
     name: '',
     phone: '',
+    zone: '',
     address: '',
     notes: '',
     errors: {},
   });
+  const branch = branchById(city);
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
   const [card, setCard] = useState<CardForm>({
     number: '',
@@ -135,13 +144,29 @@ const DeliverySection = React.memo(function DeliverySection() {
     setCard((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  // Cambiar de sucursal invalida la zona elegida (cada ciudad cubre otras colonias).
+  const changeCity = useCallback((next: CityId) => {
+    setCity(next);
+    setForm((prev) => ({
+      ...prev,
+      zone: '',
+      errors: { ...prev.errors, zone: undefined },
+    }));
+  }, []);
+
+  const zoneOptions = useMemo(
+    () => branch.zones.map((z) => ({ value: z, label: z })),
+    [branch],
+  );
+
   // Validez en vivo para habilitar/deshabilitar el botón
   const contactValid = useMemo(() => {
     const nameOk = form.name.trim().length >= 2;
     const phoneOk = /^[+]?[\d\s\-()]{9,}$/.test(form.phone.replace(/\s/g, ''));
+    const zoneOk = form.zone.trim() !== '';
     const addressOk = form.address.trim().length >= 10;
-    return nameOk && phoneOk && addressOk;
-  }, [form.name, form.phone, form.address]);
+    return nameOk && phoneOk && zoneOk && addressOk;
+  }, [form.name, form.phone, form.zone, form.address]);
 
   const cardComplete = useMemo(() => {
     const numberOk = card.number.replace(/\D/g, '').length >= 15;
@@ -162,11 +187,13 @@ const DeliverySection = React.memo(function DeliverySection() {
       errors.name = 'Introduce tu nombre completo';
     if (!form.phone || !/^[+]?[\d\s\-()]{9,}$/.test(form.phone.replace(/\s/g, '')))
       errors.phone = 'Introduce un teléfono válido';
+    if (!form.zone.trim())
+      errors.zone = `Elige tu zona de entrega en ${branch.city}`;
     if (!form.address.trim() || form.address.trim().length < 10)
       errors.address = 'Introduce la dirección completa';
     setForm((prev) => ({ ...prev, errors }));
     return Object.keys(errors).length === 0;
-  }, [form]);
+  }, [form, branch.city]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -187,7 +214,7 @@ const DeliverySection = React.memo(function DeliverySection() {
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setCart([]);
-    setForm({ name: '', phone: '', address: '', notes: '', errors: {} });
+    setForm({ name: '', phone: '', zone: '', address: '', notes: '', errors: {} });
     setPayment(null);
     setCard({ number: '', holder: '', expiry: '', cvv: '' });
     setCashGiven('');
@@ -207,7 +234,7 @@ const DeliverySection = React.memo(function DeliverySection() {
         <SectionTitle
           label="Pedidos a Domicilio"
           title="Tu Mesa en Casa"
-          subtitle="Disfruta de nuestra cocina en la comodidad de tu hogar. Entrega en 45–60 minutos dentro de La Ceiba."
+          subtitle={`Disfruta de nuestra cocina en la comodidad de tu hogar. Entrega en 45–60 minutos dentro de ${branch.city}.`}
           className="mb-12"
         />
 
@@ -393,6 +420,49 @@ const DeliverySection = React.memo(function DeliverySection() {
             <div className="bg-charcoal-light/30 border border-gold/10 p-6">
               <h3 className="font-display text-xl text-cream mb-4">Datos de Envío</h3>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+                {/* Selector de sucursal / ciudad */}
+                <div>
+                  <p className="font-body text-[11px] text-warmgray tracking-wider uppercase mb-3">
+                    Sucursal de entrega
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {branches.map((b) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => changeCity(b.id)}
+                        aria-pressed={city === b.id}
+                        className={[
+                          'min-h-[56px] flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-sm border transition-all duration-200',
+                          city === b.id
+                            ? 'border-gold bg-gold/10 text-gold'
+                            : 'border-charcoal text-warmgray hover:border-gold/40 hover:text-cream',
+                        ].join(' ')}
+                      >
+                        <FiMapPin className="text-lg" aria-hidden="true" />
+                        <span className="font-body text-xs tracking-wide">
+                          {b.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mapa de la sucursal seleccionada */}
+                <div className="overflow-hidden rounded-sm border border-gold/10">
+                  <iframe
+                    key={branch.id}
+                    title={`Mapa de ${branch.city}`}
+                    src={branch.mapSrc}
+                    className="w-full h-40 grayscale-[0.3] contrast-[1.05]"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <p className="font-body text-[11px] text-warmgray bg-charcoal/40 px-3 py-2 leading-relaxed">
+                    {branch.address}
+                  </p>
+                </div>
+
                 <Input
                   label="Nombre completo"
                   type="text"
@@ -409,8 +479,15 @@ const DeliverySection = React.memo(function DeliverySection() {
                   autoComplete="tel"
                   onChange={(e) => updateField('phone', e.target.value)}
                 />
+                <Select
+                  label={`Zona de entrega (${branch.city})`}
+                  value={form.zone}
+                  options={zoneOptions}
+                  error={form.errors.zone}
+                  onChange={(e) => updateField('zone', e.target.value)}
+                />
                 <Input
-                  label="Dirección de entrega (ubicación)"
+                  label="Dirección exacta (calle, casa, referencia)"
                   type="text"
                   value={form.address}
                   error={form.errors.address}
@@ -441,9 +518,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                           : 'border-charcoal text-warmgray hover:border-gold/40 hover:text-cream',
                       ].join(' ')}
                     >
-                      <span className="text-2xl leading-none" aria-hidden="true">
-                        💳
-                      </span>
+                      <FiCreditCard className="text-2xl" aria-hidden="true" />
                       <span className="font-body text-xs tracking-wide">Tarjeta</span>
                     </button>
                     <button
@@ -457,9 +532,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                           : 'border-charcoal text-warmgray hover:border-gold/40 hover:text-cream',
                       ].join(' ')}
                     >
-                      <span className="text-2xl leading-none" aria-hidden="true">
-                        💵
-                      </span>
+                      <FiDollarSign className="text-2xl" aria-hidden="true" />
                       <span className="font-body text-xs tracking-wide">Efectivo</span>
                     </button>
                   </div>
@@ -583,12 +656,18 @@ const DeliverySection = React.memo(function DeliverySection() {
                         <span className="font-body text-xs text-warmgray">
                           Método de pago
                         </span>
-                        <span className="font-body text-xs text-cream">
-                          {payment === 'tarjeta'
-                            ? '💳 Tarjeta'
-                            : payment === 'efectivo'
-                              ? '💵 Efectivo'
-                              : 'Sin elegir'}
+                        <span className="font-body text-xs text-cream inline-flex items-center gap-1">
+                          {payment === 'tarjeta' ? (
+                            <>
+                              <FiCreditCard aria-hidden="true" /> Tarjeta
+                            </>
+                          ) : payment === 'efectivo' ? (
+                            <>
+                              <FiDollarSign aria-hidden="true" /> Efectivo
+                            </>
+                          ) : (
+                            'Sin elegir'
+                          )}
                         </span>
                       </div>
                     </div>
@@ -600,7 +679,7 @@ const DeliverySection = React.memo(function DeliverySection() {
                 </div>
 
                 <p className="font-body text-[11px] text-warmgray/60 leading-relaxed">
-                  Entrega en 45–60 min · La Ceiba · Envío gratuito desde{' '}
+                  Entrega en 45–60 min · {branch.city} · Envío gratuito desde{' '}
                   L{FREE_SHIPPING_THRESHOLD}
                 </p>
 
@@ -633,6 +712,8 @@ const DeliverySection = React.memo(function DeliverySection() {
         total={total}
         address={form.address}
         name={form.name}
+        branchName={branch.city}
+        zone={form.zone}
         paymentMethod={payment}
         cashGiven={payment === 'efectivo' && cashIsValid ? cashGivenNum : undefined}
         change={payment === 'efectivo' && cashIsValid && !cashShort ? change : undefined}

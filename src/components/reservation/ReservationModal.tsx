@@ -3,6 +3,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { generateReservationNumber } from '../../data/reservationsMock';
 import { tablesData } from '../../data/tablesData';
+import { branchById } from '../../data/branchesData';
 import {
   formatDateDisplay,
   getCancellationInfo,
@@ -135,6 +136,8 @@ const ReservationModal = React.memo(function ReservationModal({
         {/* Detalles */}
         <div className="grid grid-cols-2 gap-3 mb-6 text-left">
           {[
+            { label: 'Sucursal', value: branchById(reservationData.city).city },
+            { label: 'Planta', value: 'Planta ' + reservationData.floor },
             { label: 'Fecha', value: formatDateDisplay(reservationData.date) },
             { label: 'Hora', value: reservationData.time + ' h' },
             { label: 'Comensales', value: reservationData.guests + ' personas' },

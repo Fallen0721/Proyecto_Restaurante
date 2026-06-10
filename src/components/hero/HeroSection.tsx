@@ -156,7 +156,7 @@ const HeroSection = React.memo(function HeroSection() {
 
       <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col items-center gap-4">
         <span className="writing-mode-vertical font-body text-xs text-gold/40 tracking-widest uppercase">
-          La Ceiba, Honduras
+          San Pedro Sula, Honduras
         </span>
         <span className="w-px h-16 bg-gold/20" />
       </div>

@@ -1,6 +1,7 @@
-import type { Table } from '../types/reservation.types';
+import type { Table, CityId, Floor } from '../types/reservation.types';
 
-export const tablesData: Table[] = [
+// Plantilla de mesas (misma distribución física en cada planta de cada sucursal).
+const baseTables: Omit<Table, 'city' | 'floor'>[] = [
   // Interior - 4 mesas de 2 personas
   { id: 'int-1', number: 1, capacity: 2, zone: 'interior', position: { x: 15, y: 15 } },
   { id: 'int-2', number: 2, capacity: 2, zone: 'interior', position: { x: 35, y: 15 } },
@@ -27,3 +28,20 @@ export const tablesData: Table[] = [
   { id: 'bar-3', number: 16, capacity: 2, zone: 'barra', position: { x: 55, y: 50 } },
   { id: 'bar-4', number: 17, capacity: 2, zone: 'barra', position: { x: 75, y: 50 } },
 ];
+
+const cities: CityId[] = ['sps', 'tegus'];
+const floors: Floor[] = [1, 2];
+
+// Cada sucursal tiene dos plantas, cada una con su propio plano de mesas.
+// La numeración de la 2ª planta arranca en 100 para distinguirla en pantalla.
+export const tablesData: Table[] = cities.flatMap((city) =>
+  floors.flatMap((floor) =>
+    baseTables.map((t) => ({
+      ...t,
+      city,
+      floor,
+      id: `${city}-p${floor}-${t.id}`,
+      number: floor === 2 ? t.number + 100 : t.number,
+    })),
+  ),
+);
